@@ -19,10 +19,14 @@ generated scene, live in 3D.
   comparisons, on two independent draws.
 - **A bookshelf's fit to its photo went from 0.40 to 0.79** once the cause was measured first: the books cut holes in
   its outline that capped even a perfect model at about 0.52. Furniture that holds things now treats such holes as
-  its contents: the fit ignores them, and an image editor fills them before the model is generated.
+  its contents: the fit ignores them, and an image editor fills them before the model is generated. Five ways of
+  handling the holes were compared on the same photo.
 - **Generating at a lower resolution made image-to-3D 1.5 to 5 times faster** with no loss of fit; repeated seeds
   showed which apparent differences were noise.
-- **Some ideas were measured and dropped:** an automatic review loop (2 of 12 fixes helped), 3D models for small
+- **The automatic review loop rarely pays for itself:** of 12 fixes it made, 2 improved the fit, both on objects
+  fitting below 0.6; none of the five on objects at 0.87 or better helped. So it is not part of the layout-first
+  pipeline (see Engineering).
+- **Some ideas were measured and dropped:** 3D models for small
   items (no measurable gain over boxes and photo-textured sheets, at most of the GPU time), RoomPlan's object boxes as
   placement priors, a partition-first segmentation, and Depth Pro 2 in place of MoGe. Each missed a bar agreed
   before it ran.
@@ -95,7 +99,13 @@ item is searched for small items, not only those called a counter or a desk.
 - **Provenance:** every file records what made it and from which inputs; every command records the commit and a hash
   of any uncommitted patch; every queued job records how long it waited and ran; every VLM call records its tokens.
 - **Recovery:** runs resume where they stopped; unreachable servers are retried; a failed mask job is retried one
-  object at a time; billed tokens are capped per run.
+  object at a time; a mask that misses its box is tried again from the object's name, then its description; a quick
+  job may run for an hour and a 3D model for three before it is stopped; billed tokens are capped per run.
+- **A review loop** (`agent.py`): a VLM critic and geometric checks (behind a wall, colliding, off its support, the
+  wrong size) each name what is wrong with an object. A fixed table gives the actions worth trying for each
+  complaint, best first; each fix is measured again and undone if the outline fits worse, and every step is logged to
+  `agent.jsonl`. Measured, it rarely paid (see Results), so it runs only at the end of `aomma run`, the original
+  single-pass pipeline, and not in the layout-first one (`aomma staged`).
 - **A companion iOS app,** AommACapture, sends photos (`POST /runs`) and whole LiDAR and RoomPlan scans
   (`POST /scans`) to the dashboard, and a scan API serves runs and results back to the capture and headset apps.
 
@@ -104,7 +114,8 @@ item is searched for small items, not only those called a counter or a desk.
 ```sh
 uv sync
 uv run aomma demo                        # writes runs/<timestamp>-demo/{scene.usda,render.png}
-uv run aomma run images/photo.jpg        # a full run, in the background; prints its folder
+uv run aomma staged images/photo.jpg     # the layout-first build: masks, labels and box layout, no models
+uv run aomma run images/photo.jpg        # the original single-pass pipeline, models and review included
 uv run aomma dashboard                   # runs, jobs and rounds at http://localhost:8765
 uv run pytest
 ```
@@ -140,6 +151,18 @@ lists every command.
 
 Restart the dashboard after updating the code: a running server keeps the old code until it is stopped and started
 again (`aomma stop dashboard`).
+
+## Experiments
+
+```sh
+uv run aomma experiment runs/<run> "Can the desk be generated faster without looking worse?" --trials 3
+```
+
+The local VLM is given the question, plans trials, runs them and reports. It can call only three tools: `run_trial`
+(generate one object again in a copy of the run, with another image-to-3D workflow, some settings lowered, or both),
+`pose_trial` (pose an object's existing model again with other settings) and `finish`. Every trial reports the
+model's fit to the photo, the share of it a wall hides and its height off the floor. The report puts the harness's
+own table of what each trial measured beside the model's findings, so the two can be checked against each other.
 
 ## Conventions
 
