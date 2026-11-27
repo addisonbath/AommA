@@ -7,9 +7,6 @@ It is an agent harness rather than one model. It coordinates a vision-language m
 image-to-3D models on GPU servers, and headless Blender. Each step is judged by measurement against data the run
 never saw, never by asking a model whether the result looks right.
 
-**See it:** [addisonbath.github.io/AommA](https://addisonbath.github.io/AommA/) shows each room's photo beside its
-generated scene, live in 3D.
-
 ## Results
 
 - **Fitting the depth to the phone's LiDAR cut furniture placement error by a third,** median 0.23 m to 0.15 m,
