@@ -1,0 +1,11 @@
+{
+  "unet": {"class_type": "UNETLoader", "inputs": {"unet_name": "qwen_image_2.1_int8_convrot.safetensors", "weight_dtype": "default"}},
+  "clip": {"class_type": "CLIPLoader", "inputs": {"clip_name": "qwen3.5_9b_qwen_image_2.1_pe_i2i.int8_convrot.safetensors", "type": "qwen_image"}},
+  "vae": {"class_type": "VAELoader", "inputs": {"vae_name": "qwen_image_2.1_vae_bf16.safetensors"}},
+  "input_image": {"class_type": "LoadImage", "inputs": {"image": ""}},
+  "input_prompt": {"class_type": "TextEncodeQwenImage21", "inputs": {"clip": ["clip", 0], "prompt": "", "negative_prompt": "", "resolution": 1024, "vae": ["vae", 0], "images.image_1": ["input_image", 0]}},
+  "sampler": {"class_type": "KSampler", "inputs": {"model": ["unet", 0], "seed": 1, "steps": 30, "cfg": 4.0, "sampler_name": "euler", "scheduler": "simple",
+              "positive": ["input_prompt", 0], "negative": ["input_prompt", 1], "latent_image": ["input_prompt", 2], "denoise": 1.0}},
+  "edited": {"class_type": "VAEDecode", "inputs": {"samples": ["sampler", 0], "vae": ["vae", 0]}},
+  "output_image": {"class_type": "PreviewImage", "inputs": {"images": ["edited", 0]}}
+}

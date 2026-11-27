@@ -1,0 +1,144 @@
+{
+  "input_image": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    }
+  },
+  "input_background": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "white"
+    }
+  },
+  "checkpoint": {
+    "class_type": "ImageOnlyCheckpointLoader",
+    "inputs": {
+      "ckpt_name": "hunyuan_3d_v2.1.safetensors"
+    }
+  },
+  "model": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "checkpoint",
+        0
+      ],
+      "shift": 1.0
+    }
+  },
+  "vision": {
+    "class_type": "CLIPVisionEncode",
+    "inputs": {
+      "clip_vision": [
+        "checkpoint",
+        1
+      ],
+      "image": [
+        "input_image",
+        0
+      ],
+      "crop": "center"
+    }
+  },
+  "cond": {
+    "class_type": "Hunyuan3Dv2Conditioning",
+    "inputs": {
+      "clip_vision_output": [
+        "vision",
+        0
+      ]
+    }
+  },
+  "latent": {
+    "class_type": "EmptyLatentHunyuan3Dv2",
+    "inputs": {
+      "resolution": 4096,
+      "batch_size": 1
+    }
+  },
+  "sample": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "model",
+        0
+      ],
+      "seed": 42,
+      "steps": 30,
+      "cfg": 5.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "positive": [
+        "cond",
+        0
+      ],
+      "negative": [
+        "cond",
+        1
+      ],
+      "latent_image": [
+        "latent",
+        0
+      ],
+      "denoise": 1.0
+    }
+  },
+  "decode": {
+    "class_type": "VAEDecodeHunyuan3D",
+    "inputs": {
+      "samples": [
+        "sample",
+        0
+      ],
+      "vae": [
+        "checkpoint",
+        2
+      ],
+      "num_chunks": 8000,
+      "octree_resolution": 256
+    }
+  },
+  "mesh": {
+    "class_type": "VoxelToMesh",
+    "inputs": {
+      "voxel": [
+        "decode",
+        0
+      ],
+      "algorithm": "surface net",
+      "threshold": 0.6
+    }
+  },
+  "decimate": {
+    "class_type": "DecimateMesh",
+    "inputs": {
+      "mesh": [
+        "mesh",
+        0
+      ],
+      "target_face_count": 60000,
+      "placement_mode": "midpoint"
+    }
+  },
+  "final": {
+    "class_type": "MeshSmoothNormals",
+    "inputs": {
+      "mesh": [
+        "decimate",
+        0
+      ],
+      "crease_angle": 180.0
+    }
+  },
+  "output_model": {
+    "class_type": "SaveGLB",
+    "inputs": {
+      "mesh": [
+        "final",
+        0
+      ],
+      "filename_prefix": "aomma/asset"
+    }
+  }
+}

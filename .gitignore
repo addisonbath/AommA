@@ -1,0 +1,33 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+runs/
+.DS_Store
+# Experiments: only their records and the scripts that ran them; models, images and point clouds stay local.
+lab/**
+!lab/*/
+!lab/*.sh
+!lab/*.py
+!lab/*.toml
+!lab/*.log
+!lab/*/brief.txt
+!lab/*/report.md
+!lab/*/trials.json
+!lab/*/review.json
+!lab/*/log.jsonl
+!lab/*/agent.jsonl
+!lab/*/run.log
+!lab/*/verdicts.json
+images/
+# AommACapture scans and the references made from them: photos and depth of home, kept local.
+scans/
+refs/
+# Reviews made on the headset (POST /scans/<scan>/reviews): edits and notes on runs of home scans.
+reviews/
+# Obsidian's settings for browsing the notes.
+.obsidian/
+# Models already generated, by crop, workflow and seed (stages/asset.py MODEL_CACHE).
+cache/
+# This machine's server addresses, laid over config/default.yaml.
+config/local.yaml

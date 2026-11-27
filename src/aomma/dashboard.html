@@ -1,0 +1,1117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AommA</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --card: #ffffff; --text: #1c1c1a; --muted: #6b6b66; --line: #e3e3de;
+    --accent: #2f6fde; --ok: #2a9d58; --warn: #b7791f; --bad: #d1433b; --track: #e9e9e4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151614; --card: #1f201d; --text: #ecece8; --muted: #9a9a93; --line: #32332f;
+      --accent: #6ea2ff; --ok: #4cc27c; --warn: #e0b050; --bad: #ef6a62; --track: #2c2d29;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 8px; }
+  nav { display: flex; flex-wrap: wrap; gap: 4px; }
+  nav a { padding: 5px 12px; border-radius: 7px; color: var(--muted); text-decoration: none; font-weight: 500; }
+  nav a.on { background: var(--card); color: var(--text); border: 1px solid var(--line); }
+  .status { color: var(--muted); font-size: 13px; margin-left: auto; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--bad); margin-right: 6px; }
+  .dot.on { background: var(--ok); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .empty { color: var(--muted); }
+  .title { font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+  .meta { color: var(--muted); font-size: 13px; margin-top: 2px; overflow-wrap: anywhere; }
+  .bar { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; margin: 10px 0 4px; }
+  .bar > div { height: 100%; background: var(--accent); transition: width .4s; }
+  .now { margin-top: 12px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { text-align: left; padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; border-top: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.name { overflow-wrap: anywhere; }
+  tr.live td { color: var(--accent); font-weight: 600; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  .scroll { overflow-x: auto; }
+  code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  select { font: inherit; padding: 6px 8px; border-radius: 7px; border: 1px solid var(--line);
+           background: var(--card); color: var(--text); max-width: 100%; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 10px; }
+  .facts div { font-size: 13px; color: var(--muted); }
+  .facts b { display: block; font-size: 17px; color: var(--text); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+  .span-all { grid-column: 1 / -1; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+  @media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }
+  td a, .meta a { color: var(--accent); }
+  .stages { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 6px; font-size: 13px; }
+  .livetext { color: var(--accent); font-weight: 600; }
+  .step { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .step .n { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%;
+             background: var(--accent); color: var(--card); font-size: 12px; flex: none; }
+  img.shot { width: 100%; height: auto; display: block; border-radius: 6px; background: var(--track); }
+  iframe.viewer { width: 100%; height: min(70vh, 640px); border: 0; border-radius: 6px; display: block; background: var(--track); }
+  .thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 5px; display: block; background: #000; }
+  .obj { font-weight: 600; }
+  .desc { color: var(--muted); font-size: 12px; }
+  [hidden] { display: none !important; }
+  /* The Labels tab: a photo's label map, drawn on a canvas so the label under the pointer can be named. */
+  .modes { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 10px; }
+  .modes button { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 7px; border: 1px solid var(--line);
+                  background: var(--card); color: var(--muted); cursor: pointer; }
+  .modes button.on { color: var(--text); border-color: var(--accent); }
+  .gallery { display: grid; gap: 16px; }
+  .gallery-row { display: grid; grid-template-columns: 1fr 2fr 1fr 1fr 1fr; gap: 10px; margin-top: 10px; align-items: start; }
+  @media (max-width: 760px) { .gallery-row { grid-template-columns: 1fr; } }
+  .gallery-pic { margin: 0; }
+  .gallery-pic figcaption { margin-top: 4px; }
+  canvas.labels { width: 100%; height: auto; display: block; border-radius: 6px; background: var(--track); cursor: crosshair; touch-action: manipulation; }
+  .under { min-height: 1.45em; margin-top: 8px; font-size: 13px; }
+  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+  tr.pick { cursor: pointer; }
+  tr.pick:hover td { background: var(--track); }
+  tr.chosen td { background: var(--track); font-weight: 600; }
+  tr.out td { opacity: .55; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  /* Text written by the worker model: kept as written, never read as HTML. */
+  .prose { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; margin: 0; }
+  /* A cell that may hold one long unbroken string (a file path in an error), which must not widen its table. */
+  td.wrap { overflow-wrap: anywhere; min-width: 160px; }
+  .prose + .prose { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 10px; }
+  /* A round's table keeps its column widths while it refreshes: the live command's last line changes length every
+     poll, and with widths taken from the content every column moved with it. That line is cut to one line instead. */
+  table.rounds { table-layout: fixed; width: 100%; }
+  table.rounds th:nth-child(1) { width: 26%; }
+  table.rounds th:nth-child(2) { width: 22%; }
+  table.rounds th:nth-child(4) { width: 76px; }
+  table.rounds td { overflow-wrap: anywhere; }
+  .lastline { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* At phone width a wide table (see `stackable`) shows each row as a block: its name across the
+     top (beside its picture, if it has one), then each value under its column's name. */
+  @media (max-width: 600px) {
+    table.stack { display: block; }
+    table.stack tr.head { display: none; }
+    table.stack tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding: 10px 0; border-top: 1px solid var(--line); }
+    table.stack tr.head + tr { border-top: 0; padding-top: 0; }
+    table.stack td { display: block; padding: 0; border-top: 0; text-align: left; white-space: normal; }
+    table.stack td:empty { display: none; }
+    table.stack td.name { flex: 1 1 100%; min-width: 0; }
+    table.stack td.pic { flex: none; align-self: center; }
+    table.stack td.pic + td.name { flex-basis: calc(100% - 60px); align-self: center; }
+    table.stack td[data-label]::before { content: attr(data-label) " "; color: var(--muted); font-size: 12px; font-weight: 400; }
+    table.stack td.name::before { content: none; }
+    table.stack.rounds td { max-width: 100%; min-width: 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>AommA</h1>
+    <nav><a href="#jobs" id="tab-jobs">Jobs</a><a href="#runs" id="tab-runs">Runs</a><a href="#rounds" id="tab-rounds">Rounds</a><a href="#models" id="tab-models">Models</a><a href="#experiments" id="tab-experiments">Experiments</a><a href="#labels" id="tab-labels">Labels</a></nav>
+    <span class="status"><span class="dot" id="dot"></span><span id="conn">connecting…</span></span>
+  </header>
+
+  <div id="view-jobs">
+    <div id="rounds"></div>
+    <div id="batches"></div>
+    <div id="vlm"></div>
+    <div id="servers"></div>
+    <h2>Recent</h2>
+    <div class="card scroll" id="recent"></div>
+  </div>
+
+  <div id="view-runs" hidden>
+    <select id="run-picker" aria-label="Run"></select>
+    <div class="card" id="run-log" hidden style="margin-top:12px">
+      <div class="meta" id="run-log-state"></div>
+      <pre id="run-log-lines" style="margin:8px 0 0; max-height:260px; overflow:auto; font-size:12px; line-height:1.45; white-space:pre-wrap; overflow-wrap:anywhere"></pre>
+    </div>
+    <div id="run"></div>
+  </div>
+
+  <div id="view-rounds" hidden></div>
+
+  <div id="view-models" hidden></div>
+
+  <div id="view-labels" hidden>
+    <select id="labels-picker" aria-label="Round"></select>
+    <div id="labels-table"></div>
+    <div id="labels-run"></div>
+  </div>
+
+  <div id="view-experiments" hidden>
+    <select id="experiment-picker" aria-label="Experiment"></select>
+    <div id="experiment"></div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+// Filled in by the server; see _page_version in dashboard.py.
+const PAGE_VERSION = "__PAGE_VERSION__";
+
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs)) {
+    if (key === "class") node.className = value;
+    else if (typeof value === "function") node.addEventListener(key.replace(/^on/, ""), value);
+    else if (value === true) node.setAttribute(key, "");
+    else if (value !== false) node.setAttribute(key, value);
+  }
+  for (const child of children) node.append(...[child].flat());
+  return node;
+}
+
+// Marks a table, built with its column names in the first row, to be shown a row at a time at phone width:
+// each cell is labelled with its column's name (see `table.stack` in the styles).
+function stackable(table) {
+  const [head, ...rows] = table.rows;
+  const names = [...head.cells].map((cell) => cell.textContent);
+  head.classList.add("head");
+  for (const row of rows) [...row.cells].forEach((cell, i) => { if (names[i]) cell.dataset.label = names[i]; });
+  table.classList.add("stack");
+  return table;
+}
+
+function duration(seconds) {
+  seconds = Math.max(0, Math.round(seconds));
+  const m = Math.floor(seconds / 60), s = seconds % 60;
+  return m ? `${m}m ${String(s).padStart(2, "0")}s` : `${s}s`;
+}
+
+const label = (job) => job.label || "(unlabelled)";
+const shortId = (id) => id.slice(0, 8);
+
+/* ---------- Jobs ---------- */
+
+const host = (url) => url.replace(/^https?:\/\//, "");
+
+function runningCard(now, server, job) {
+  const box = el("div", {class: "card"});
+  if (!job) { box.append(el("div", {class: "empty"}, "Nothing running.")); return box; }
+
+  const progress = server.progress[job.id] || {nodes: [], cached: 0};
+  const started = progress.started || job.create_time / 1000;
+  box.append(
+    el("div", {class: "title"}, label(job)),
+    el("div", {class: "meta"}, `job ${shortId(job.id)} · running for ${duration(now - started)}`),
+  );
+  if (!progress.nodes.length) {
+    box.append(el("div", {class: "meta"}, "No node detail yet (the dashboard connected after this job's current node began)."));
+    return box;
+  }
+  const done = progress.cached + progress.nodes.filter((n) => n.end).length;
+  if (progress.total) {
+    box.append(
+      el("div", {class: "bar"}, el("div", {style: `width:${100 * done / progress.total}%`})),
+      el("div", {class: "meta"}, `${done} of ${progress.total} nodes done`),
+    );
+  }
+  const current = progress.nodes[progress.nodes.length - 1];
+  if (current && !current.end) {
+    box.append(el("div", {class: "now"}, `${current.node} · ${duration(now - current.start)}`));
+    if (current.steps) {
+      box.append(
+        el("div", {class: "bar"}, el("div", {style: `width:${100 * current.step / current.steps}%`})),
+        el("div", {class: "meta"}, `step ${current.step} of ${current.steps}`),
+      );
+    }
+  }
+  return box;
+}
+
+function queuedCard(queued) {
+  const table = el("table");
+  for (const job of queued) {
+    table.append(el("tr", {}, el("td", {class: "name"}, label(job)), el("td", {class: "num"}, el("code", {}, shortId(job.id)))));
+  }
+  return el("div", {class: "card", style: "margin-top:8px"}, el("div", {class: "meta"}, `${queued.length} queued`), table);
+}
+
+function timelineCard(now, progress, caption) {
+  const box = el("div", {class: "card scroll", style: "margin-top:8px"}, el("div", {class: "meta"}, caption));
+  if (progress.error) box.append(el("div", {class: "bad"}, `Failed: ${progress.error}`));
+  const table = el("table", {}, el("tr", {}, el("th", {}, "Node"), el("th", {class: "num"}, "Steps"), el("th", {class: "num"}, "Time")));
+  for (const node of progress.nodes) {
+    table.append(el("tr", node.end ? {} : {class: "live"},
+      el("td", {class: "name"}, node.node),
+      el("td", {class: "num"}, node.steps ? `${node.step}/${node.steps}` : ""),
+      el("td", {class: "num"}, duration((node.end || now) - node.start)),
+    ));
+  }
+  if (progress.started) {
+    const end = progress.ended || now;
+    table.append(el("tr", {}, el("th", {}, progress.cached ? `Total (${progress.cached} nodes reused from cache)` : "Total"), el("th", {}, ""), el("th", {class: "num"}, duration(end - progress.started))));
+  }
+  box.append(table);
+  return box;
+}
+
+function serverSection(now, server) {
+  const memory = server.free_memory_gb === null ? "" : ` · ${Math.round(server.free_memory_gb)} GB free`;
+  const section = el("section", {},
+    el("h2", {}, el("span", {class: server.connected ? "dot on" : "dot"}), `${server.lane} lane · ${host(server.url)}${memory}`));
+  const running = server.active.find((job) => job.status === "in_progress");
+  section.append(runningCard(now, server, running));
+  const queued = server.active.filter((job) => job.status === "pending");
+  if (queued.length) section.append(queuedCard(queued));
+
+  // Node timings for the running job, or the last finished one we watched.
+  const last = server.recent.find((job) => server.progress[job.id] && server.progress[job.id].nodes.length);
+  const shown = running && server.progress[running.id] && server.progress[running.id].nodes.length ? running : last;
+  if (shown) {
+    const caption = shown === running ? "Node timings" : `Node timings of the last job: ${label(shown)}`;
+    section.append(timelineCard(now, server.progress[shown.id], caption));
+  }
+  return section;
+}
+
+// The harness's own queue: objects in a running batch that ComfyUI has not been given yet.
+// The one queue every job waits in: what is running, then what is waiting in the order it will run.
+// What a queue ticket's work is for, as a link to its run or experiment on this page.
+function ownerLink(job) {
+  const owner = job.owner;
+  if (!owner) return document.createTextNode(job.run || "");
+  const text = owner.kind === "experiment"
+    ? `experiment ${owner.name}${owner.trial ? ` · trial ${owner.trial}` : ""}` : owner.name;
+  return el("a", {href: `#${owner.kind}=${encodeURIComponent(owner.name)}`}, text);
+}
+
+// The VLM's turns wait in the harness's queue like any job; there is no server of its own to watch.
+function vlmSection(now, queue, vlm) {
+  const ours = queue.filter((job) => job.kind === "vlm");
+  const running = ours.find((job) => job.state === "running");
+  const waiting = ours.filter((job) => job.state === "waiting");
+  const section = el("section", {}, el("h2", {}, el("span", {class: "dot on"}), `VLM · ${vlm.model}${vlm.url ? ` · ${host(vlm.url)}` : ""}`));
+  const box = el("div", {class: "card"});
+  if (running) {
+    box.append(
+      el("div", {class: "title"}, running.label),
+      el("div", {class: "meta"}, "for ", ownerLink(running), ` · running for ${duration(now - running.started)}`));
+  } else {
+    box.append(el("div", {class: "empty"}, "Nothing running."));
+  }
+  section.append(box);
+  if (waiting.length) {
+    const table = el("table", {}, el("tr", {}, el("th", {}, "Waiting"), el("th", {}, "For"), el("th", {class: "num"}, "Waited")));
+    for (const job of waiting) {
+      table.append(el("tr", {},
+        el("td", {class: "name"}, job.label),
+        el("td", {class: "desc"}, ownerLink(job)),
+        el("td", {class: "num"}, duration(now - job.enqueued))));
+    }
+    section.append(el("div", {class: "card scroll", style: "margin-top:8px"},
+      el("div", {class: "meta"}, `${waiting.length} waiting. A VLM turn goes ahead of 3D models but waits for the job that is running.`),
+      stackable(table)));
+  }
+  return section;
+}
+
+async function moveJob(ticket, by) {
+  try {
+    await fetch("/queue/move", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ticket, by})});
+  } catch (error) { return; }
+  refreshJobs();
+}
+
+function queueSection(now, queue, runs) {
+  const running = queue.filter((job) => job.state === "running");
+  const waiting = queue.filter((job) => job.state === "waiting");
+  const kinds = {vlm: "VLM", light: "masks, depth, edits", "3d": "3D model"};
+  const section = el("section", {}, el("h2", {}, "Queue"));
+
+  // Where each active run has got to, as one line of stages.
+  for (const run of runs) {
+    const stages = run.items.map((item) => el("span", {class: item.phase === "done" ? "ok" : item.phase === "live" ? "livetext" : "empty"},
+      (item.phase === "done" ? "✓ " : item.phase === "live" ? "▶ " : "· ") + item.id + (item.phase === "live" ? `: ${item.state}` : "")));
+    section.append(el("div", {class: "card", style: "margin-bottom:8px"},
+      el("div", {class: "title", style: "font-size:14px"}, run.run),
+      el("div", {class: "stages"}, ...stages)));
+  }
+
+  if (!running.length && !waiting.length) {
+    section.append(el("div", {class: "card empty"}, "Nothing running or waiting."));
+    return section;
+  }
+  const table = el("table", {}, el("tr", {},
+    el("th", {class: "num"}, "#"), el("th", {}, "Job"), el("th", {}, "For"), el("th", {}, "Kind"), el("th", {}, "State"), el("th", {}, "Move")));
+  [...running, ...waiting].forEach((job, index) => {
+    // Jobs move only within their own lane (quick jobs, or 3D models), so the arrows stop at the ends of it.
+    const lane = (kind) => kind === "3d" ? "heavy" : "quick";
+    const same = waiting.filter((other) => lane(other.kind) === lane(job.kind));
+    const arrow = (text, by, disabled) => el("button", {class: "move", title: by < 0 ? "Run sooner" : "Run later", disabled, onclick: () => moveJob(job.id, by)}, text);
+    const live = job.state === "running";
+    table.append(el("tr", live ? {class: "live"} : {},
+      el("td", {class: "num"}, live ? "▶" : String(index + 1 - running.length)),
+      el("td", {class: "name"}, job.label.replace(`${job.run}_`, "").replace(`aomma_${job.run}.jpg`, "").trim()),
+      el("td", {class: "desc"}, ownerLink(job)),
+      el("td", {}, kinds[job.kind] || job.kind),
+      el("td", {class: live ? "" : "empty"}, live ? `running for ${duration(now - job.started)}` : `waiting ${duration(now - job.enqueued)}`),
+      el("td", {}, live ? "" : [arrow("↑", -1, same[0] === job), arrow("↓", 1, same[same.length - 1] === job)])));
+  });
+  section.append(el("div", {class: "card scroll"},
+    el("div", {class: "meta"}, `${running.length} running · ${waiting.length} waiting. Quick jobs and 3D models wait in two lanes, one job running in each.`),
+    stackable(table)));
+  return section;
+}
+
+// Rounds (rounds.py): each step of the plan in order, with the runs it works on, so what is still to come shows from the start.
+function roundsSection(now, rounds) {
+  const section = el("section", {}, el("h2", {}, "Rounds"));
+  const mark = {done: "✓ ", live: "▶ ", failed: "✗ ", skipped: "– ", waiting: "· "};
+  const style = {done: "ok", live: "livetext", failed: "bad", skipped: "empty", waiting: "empty"};
+  const short = (path) => path.split("/").pop();
+  const took = (item) => item.started ? duration((item.finished || now) - item.started) : "";
+  for (const round of rounds) {
+    const items = round.steps.flatMap((step) => step.items);
+    const done = items.filter((item) => item.phase === "done").length;
+    const state = round.running ? `running for ${duration(now - round.started)}`
+      : round.outcome ? `${round.outcome}, ${new Date(round.finished * 1000).toLocaleString()}` : "not started";
+    const table = el("table", {class: "rounds"}, el("tr", {class: "head"}, el("th", {}, "Step"), el("th", {}, "Run"), el("th", {}, "State"), el("th", {class: "num"}, "Took")));
+    for (const step of round.steps) {
+      // A step not reached yet that runs on each of an earlier step's runs has none to show.
+      const rows = step.items.length ? step.items : [{id: "", phase: "waiting"}];
+      rows.forEach((item, index) => {
+        const what = item.phase === "live" ? "running" : item.note ? `${item.phase}: ${item.note}` : item.phase === "failed" ? `failed (exit ${item.exit ?? "?"})` : item.phase;
+        table.append(el("tr", item.phase === "live" ? {class: "live"} : {},
+          el("td", {class: "name"}, index === 0 ? step.title : ""),
+          el("td", {class: "desc"}, item.id ? short(item.id) : step.each && !step.items.length ? "each run, once known" : ""),
+          el("td", {class: style[item.phase] || ""}, mark[item.phase] + what,
+            item.last_line ? el("div", {class: "meta lastline", title: item.last_line}, item.last_line) : ""),
+          el("td", {class: "num"}, took(item))));
+      });
+    }
+    section.append(el("div", {class: "card scroll", style: "margin-bottom:8px"},
+      el("div", {class: "title", style: "font-size:14px"}, round.title),
+      el("div", {class: "meta"}, `${short(round.folder)} · ${state} · ${done} of ${items.length} done`),
+      stackable(table)));
+  }
+  return section;
+}
+
+function renderRecent(servers, queue) {
+  const box = $("recent");
+  box.replaceChildren();
+  // The VLM's finished turns come from the harness's queue, put in the shape of a ComfyUI job.
+  const turns = queue.filter((job) => job.kind === "vlm" && (job.state === "done" || job.state === "failed")).map((job) => ({
+    label: job.label, job_owner: job, server: "VLM", status: job.state === "done" ? "completed" : "failed",
+    execution_start_time: job.started * 1000, execution_end_time: job.finished * 1000,
+  }));
+  const recent = [...servers.flatMap((server) => server.recent.map((job) => ({...job, server: host(server.url)}))), ...turns]
+    .sort((a, b) => (b.execution_end_time || 0) - (a.execution_end_time || 0)).slice(0, 20);
+  if (!recent.length) { box.append(el("div", {class: "empty"}, "No finished jobs.")); return; }
+  const table = el("table", {}, el("tr", {}, el("th", {}, "Job"), el("th", {}, "Server"), el("th", {}, "Result"), el("th", {class: "num"}, "Took"), el("th", {class: "num"}, "Finished")));
+  for (const job of recent) {
+    const took = job.execution_end_time && job.execution_start_time
+      ? duration((job.execution_end_time - job.execution_start_time) / 1000) : "";
+    const finished = job.execution_end_time ? new Date(job.execution_end_time).toLocaleTimeString() : "";
+    table.append(el("tr", {},
+      el("td", {class: "name"}, label(job), job.job_owner ? el("div", {class: "meta"}, "for ", ownerLink(job.job_owner)) : ""),
+      el("td", {}, job.server.split(":").pop()),
+      el("td", {class: job.status === "completed" ? "ok" : "bad"}, job.status),
+      el("td", {class: "num"}, took),
+      el("td", {class: "num"}, finished),
+    ));
+  }
+  box.append(stackable(table));
+}
+
+async function refreshJobs() {
+  let state;
+  try {
+    state = await (await fetch("/state.json")).json();
+  } catch (error) {
+    $("dot").className = "dot";
+    $("conn").textContent = "dashboard server not reachable";
+    return;
+  }
+  // The dashboard was restarted with a newer page: load it.
+  if (state.page_version !== PAGE_VERSION) { location.reload(); return; }
+  const down = state.servers.filter((server) => !server.connected);
+  $("dot").className = down.length ? "dot" : "dot on";
+  $("conn").textContent = down.length
+    ? `cannot reach ${down.map((server) => host(server.url)).join(", ")}`
+    : `${state.servers.length} ComfyUI server${state.servers.length === 1 ? "" : "s"} connected`;
+  if (view !== "jobs") return;
+  $("rounds").replaceChildren(...(state.rounds?.length ? [roundsSection(state.now, state.rounds)] : []));
+  $("batches").replaceChildren(queueSection(state.now, state.queue, state.runs));
+  $("vlm").replaceChildren(vlmSection(state.now, state.queue, state.vlm));
+  $("servers").replaceChildren(...state.servers.map((server) => serverSection(state.now, server)));
+  renderRecent(state.servers, state.queue);
+}
+
+/* ---------- Runs ---------- */
+
+// Below this share of its box covered by masks, an object is suspect (MIN_FILL in segment.py).
+const MIN_FILL = 0.5;
+
+const fileUrl = (picture) => `/files/${picture.path}?v=${picture.version}`;
+
+// Colour a 0-1 agreement score: good, middling, poor.
+function scoreCell(value) {
+  if (value === null || value === undefined) return el("td", {class: "num"}, "");
+  return el("td", {class: "num " + (value >= 0.8 ? "ok" : value >= 0.6 ? "warn" : "bad")}, value.toFixed(2));
+}
+
+function fact(name, value) {
+  return el("div", {}, el("b", {}, value), name);
+}
+
+function renderRun(run) {
+  const box = $("run");
+  box.replaceChildren();
+
+  const placed = run.objects.filter((o) => o.pose);
+  const boxScores = run.objects.map((o) => o.box_iou).filter((v) => v !== null && v !== undefined);
+  const mean = (values) => values.reduce((a, b) => a + b, 0) / values.length;
+  const facts = el("div", {class: "facts"},
+    fact("objects", String(run.objects.length)),
+    fact("with a 3D model", String(run.objects.filter((o) => o.has_model).length)),
+  );
+  if (placed.length) facts.append(fact("mean model fit", mean(placed.map((o) => o.pose.iou)).toFixed(2)));
+  if (boxScores.length) facts.append(fact("mean box fit", mean(boxScores).toFixed(2)));
+  if (run.camera_height !== null) facts.append(fact("camera height", `${run.camera_height.toFixed(2)} m`));
+  if (run.depth_scale !== null) facts.append(fact("depth scale", `×${run.depth_scale.toFixed(2)}`));
+  if (run.camera) {
+    const fov = 2 * Math.atan(run.camera.sensor_width_mm / (2 * run.camera.focal_length_mm)) * 180 / Math.PI;
+    facts.append(fact(`field of view (${run.camera.source})`, `${fov.toFixed(1)}°`));
+  }
+  const billed = run.usage.filter((u) => u.billed).reduce((sum, u) => sum + u.input_tokens + u.output_tokens, 0);
+  facts.append(fact("billed tokens", String(billed)));
+  box.append(el("div", {class: "card", style: "margin-top:12px"},
+    el("div", {class: "title"}, run.name), el("div", {class: "meta"}, run.source || ""), facts));
+
+  // The page follows the pipeline: the perception stages, then the models, then the finished scene.
+  let number = 0;
+  const step = (title, caption) => [
+    el("div", {class: "step"}, el("span", {class: "n"}, String(++number)), title),
+    el("div", {class: "meta", style: "margin-bottom:10px"}, caption),
+  ];
+  const linked = (shown, title) =>
+    el("a", {href: fileUrl(shown), target: "_blank"}, el("img", {class: "shot", src: fileUrl(shown), alt: title, loading: "lazy"}));
+  const pending = () => el("div", {class: "empty"}, "Not run yet.");
+
+  const grid = el("div", {class: "grid", style: "margin-top:16px"});
+  for (const stage of run.stages) {
+    const shown = stage.pictures.filter(Boolean);
+    // A stage of two pictures (the layout's wireframes and render) takes the grid's whole width, its pictures side by side.
+    const many = stage.pictures.length > 1;
+    grid.append(el("div", {class: "card" + (many ? " span-all" : "")}, ...step(stage.title, stage.caption),
+      !shown.length ? pending()
+        : many ? el("div", {class: "pair"}, ...stage.pictures.map((shot) => shot ? linked(shot, stage.title) : pending()))
+        : linked(shown[0], stage.title)));
+  }
+  box.append(grid);
+
+  const table = el("table", {}, el("tr", {},
+    el("th", {}, ""), el("th", {}, "Object"), el("th", {}, "Rests on"), el("th", {}, "Mask from"),
+    el("th", {class: "num"}, "Mask"), el("th", {class: "num"}, "Box filled"), el("th", {class: "num"}, "Box fit"), el("th", {}, "Model"),
+    el("th", {class: "num"}, "Model fit"), el("th", {class: "num"}, "Colour diff"), el("th", {class: "num"}, "Longest side")));
+  for (const obj of run.objects) {
+    const thumb = obj.crop
+      ? el("a", {href: fileUrl(obj.crop), target: "_blank"}, el("img", {class: "thumb", src: fileUrl(obj.crop), alt: "", loading: "lazy"}))
+      : "";
+    const filled = obj.mask && obj.mask.fill !== undefined ? obj.mask.fill : null;
+    table.append(el("tr", {},
+      el("td", {class: "pic"}, thumb),
+      el("td", {class: "name"}, el("div", {class: "obj"}, obj.id), el("div", {class: "desc"}, obj.description)),
+      el("td", {}, obj.on),
+      el("td", {}, obj.mask ? obj.mask.prompt : ""),
+      scoreCell(obj.mask ? obj.mask.box_iou : null),
+      el("td", {class: "num" + (filled !== null && filled < MIN_FILL ? " bad" : "")}, filled === null ? "" : filled.toFixed(2)),
+      scoreCell(obj.box_iou),
+      el("td", {class: obj.has_model ? "ok" : "empty"},
+        !obj.has_model ? "box only" : obj.flat ? "from photo" : !obj.repaired ? "yes"
+          : obj.repair ? el("a", {href: fileUrl(obj.repair), target: "_blank"}, "repaired") : "repaired",
+        obj.viewable ? [" · ", el("a", {href: `/viewer/${encodeURIComponent(run.name)}?model=${encodeURIComponent(obj.id)}`, target: "_blank"}, "3D")] : ""),
+      scoreCell(obj.pose ? obj.pose.iou : null),
+      el("td", {class: "num"}, obj.pose ? obj.pose.color_error.toFixed(2) : ""),
+      el("td", {class: "num"}, obj.pose ? `${obj.pose.scale.toFixed(2)} m` : ""),
+    ));
+  }
+  const modelled = run.objects.some((o) => o.has_model);
+  box.append(el("div", {class: "card", style: "margin-top:16px"},
+    ...step("Models", "Each object is cut out of the photo and turned into a 3D model, after being redrawn whole if "
+      + "something hides part of it. Flat wall art is painted straight from the photo, and copies of one product share a model. Each model is then turned, "
+      + "sized and moved until its outline matches the object's mask."),
+    el("div", {class: "scroll"}, stackable(table)),
+    el("div", {class: "meta", style: "margin-top:8px"},
+      "Mask: agreement between the segmenter's mask and the VLM's box. Box filled: share of that box covered by the object's mask and the masks of smaller things in front of it; a low share means the masks missed something. Box fit and model fit: overlap between the placed shape's outline and the mask. All run 0 to 1; higher is better.")));
+
+  // The review: every complaint, and what was done about it. Objects judged fine are only counted.
+  const review = run.review || [];
+  const judged = review.filter((entry) => entry.kind === "finding");
+  const notes = el("table", {}, el("tr", {},
+    el("th", {class: "num"}, "Round"), el("th", {}, "Object"), el("th", {}, "Verdict or action"), el("th", {}, "Detail")));
+  for (const entry of review) {
+    if (entry.kind === "finding" && entry.verdict === "ok") continue;
+    const what = entry.kind === "finding" ? entry.verdict.replace("_", " ") + (entry.source === "checks" ? " (measured)" : "")
+      : entry.kind === "action" ? `→ ${entry.action.replace("_", " ")}`
+      : entry.kind === "skipped" ? `${entry.verdict.replace("_", " ")}: not acted on` : "→ added";
+    const detail = entry.kind === "finding" ? entry.note : entry.kind === "action" ? entry.outcome
+      : entry.kind === "skipped" ? entry.reason : (entry.ids || []).join(", ");
+    notes.append(el("tr", {},
+      el("td", {class: "num"}, String(entry.round)),
+      el("td", {class: "name"}, entry.view ? el("a", {href: fileUrl(entry.view), target: "_blank"}, entry.id) : (entry.id || "")),
+      el("td", {class: entry.kind === "finding" ? "bad" : "ok"}, what),
+      el("td", {class: "desc"}, detail)));
+  }
+  const fine = judged.filter((entry) => entry.verdict === "ok").length;
+  box.append(el("div", {class: "card", style: "margin-top:16px"},
+    ...step("Review", "A critic compares each object in the render with the photo, and the scene checks measure each against the depth map, "
+      + "its estimated size and the other models. Each complaint leads to one action from a fixed list, "
+      + "and an action that makes the outline fit or the measurements worse is undone."),
+    !run.review ? pending()
+      : el("div", {}, el("div", {class: "meta", style: "margin-bottom:8px"}, `${judged.length} judgements, ${fine} of them fine.`),
+          notes.children.length > 1 ? el("div", {class: "scroll"}, notes) : "")));
+
+  box.append(el("div", {class: "card", style: "margin-top:16px"},
+    ...step("Result", modelled
+      ? "The photo (left) beside a render of the USD scene from the same camera (right)."
+      : "The photo (left) beside a render of the boxes from the same camera (right)."),
+    run.result ? linked(run.result, "Photo and render") : pending()));
+
+  // The viewer is its own page, so it keeps its place while this one refreshes around it.
+  const viewer = run.scene ? `/viewer/${encodeURIComponent(run.name)}?v=${run.scene.version}` : null;
+  box.append(el("div", {class: "card", style: "margin-top:16px"},
+    ...step("3D scene", "The same scene to look around in. Drag to orbit, scroll or pinch to zoom, right-drag or two fingers to pan."),
+    viewer ? el("iframe", {class: "viewer", src: viewer, title: "3D view of the scene", loading: "lazy"}) : pending(),
+    viewer ? el("div", {class: "meta", style: "margin-top:6px"},
+      el("a", {href: viewer, target: "_blank"}, "Open full screen"), " · ",
+      el("a", {href: `/usdz/${encodeURIComponent(run.name)}`, download: ""}, "Download USDZ")) : ""));
+}
+
+/* ---------- Models ---------- */
+
+function gigabytes(bytes) {
+  if (bytes === null || bytes === undefined) return "";
+  return bytes >= 1e9 ? `${(bytes / 1e9).toFixed(1)} GB` : `${Math.round(bytes / 1e6)} MB`;
+}
+
+function renderModels(data) {
+  const box = $("view-models");
+  box.replaceChildren();
+  const sized = data.stages.filter((stage) => stage.total !== null);
+  box.append(el("div", {class: "card", style: "margin-top:12px"},
+    el("div", {class: "title"}, "Models in the pipeline"),
+    el("div", {class: "meta"}, "What each stage runs now, how big it is on disk, and what could take its place. "
+      + "Stages are swapped in the config file; nothing here changes by itself."),
+    el("div", {class: "facts"},
+      fact("stages", String(data.stages.length)),
+      fact("model files in use", String(data.stages.reduce((sum, stage) => sum + stage.models.length, 0))),
+      fact("in use, on disk", gigabytes(sized.reduce((sum, stage) => sum + stage.total, 0))))));
+  for (const problem of data.problems) {
+    box.append(el("div", {class: "card bad", style: "margin-top:12px"}, `Could not ask ${problem}. Sizes from it are missing.`));
+  }
+
+  let number = 0;
+  for (const stage of data.stages) {
+    const using = el("table", {}, el("tr", {},
+      el("th", {}, "In use"), el("th", {}, "Part"), el("th", {}, "Where"), el("th", {class: "num"}, "Size")));
+    for (const model of stage.models) {
+      using.append(el("tr", {}, el("td", {class: "name"}, el("code", {}, model.name)), el("td", {}, model.role),
+        el("td", {}, model.where), el("td", {class: "num"}, gigabytes(model.size))));
+    }
+    if (stage.models.length > 1 && stage.total !== null) {
+      using.append(el("tr", {}, el("th", {}, "Total"), el("th", {}, ""), el("th", {}, ""), el("th", {class: "num"}, gigabytes(stage.total))));
+    }
+    const options = el("table", {style: "margin-top:14px"}, el("tr", {},
+      el("th", {}, "Other options"), el("th", {}, "Notes"), el("th", {}, "Where"), el("th", {class: "num"}, "Size")));
+    for (const option of stage.options) {
+      options.append(el("tr", {}, el("td", {class: "name"}, option.where === "not installed" ? option.name : el("code", {}, option.name)),
+        el("td", {class: "desc"}, option.note), el("td", {class: option.where === "not installed" ? "empty" : ""}, option.where),
+        el("td", {class: "num"}, gigabytes(option.size))));
+    }
+    box.append(el("div", {class: "card", style: "margin-top:16px"},
+      el("div", {class: "step"}, el("span", {class: "n"}, String(++number)), stage.title),
+      el("div", {class: "meta", style: "margin-bottom:10px"}, stage.does + (stage.workflow ? ` Workflow: ${stage.workflow}.` : "")),
+      el("div", {class: "scroll"}, using, stage.options.length ? options : "")));
+  }
+}
+
+let shownModels = "";
+
+async function refreshModels() {
+  if (view !== "models") return;
+  if (!shownModels) $("view-models").replaceChildren(el("div", {class: "card empty", style: "margin-top:12px"}, "Asking the servers what they hold…"));
+  let text;
+  try { text = await (await fetch("/models.json")).text(); } catch (error) { return; }
+  if (text !== shownModels) { shownModels = text; renderModels(JSON.parse(text)); }
+}
+
+/* ---------- Experiments ---------- */
+const labFileUrl = (picture) => `/labfiles/${picture.path}?v=${picture.version}`;
+const STATES = {running: "livetext", finished: "ok", stopped: "warn"};
+
+function renderExperiment(experiment) {
+  const box = $("experiment");
+  box.replaceChildren();
+  const used = (kind) => experiment.trials.filter((trial) => trial.kind === kind).length;
+  const facts = el("div", {class: "facts"}, fact("state", experiment.state));
+  facts.firstChild.firstChild.className = STATES[experiment.state] || "";
+  for (const [kind, name] of [["generate", "models generated"], ["pose", "pose trials"]]) {
+    if (experiment.budget[kind] !== undefined || used(kind)) {
+      facts.append(fact(name, experiment.budget[kind] !== undefined ? `${used(kind)} of ${experiment.budget[kind]}` : String(used(kind))));
+    }
+  }
+  box.append(el("div", {class: "card", style: "margin-top:12px"},
+    el("div", {class: "title"}, experiment.name),
+    el("div", {class: "meta"}, experiment.run ? `on run ${experiment.run}` : `on a run of the ${experiment.photo} photo`),
+    facts,
+    experiment.question ? el("p", {class: "prose", style: "margin-top:12px"}, experiment.question) : ""));
+
+  // Whether someone has checked it yet, and what came of that.
+  if (experiment.state !== "running") {
+    const review = experiment.review;
+    box.append(el("div", {class: "card", style: "margin-top:16px"},
+      el("div", {class: "step"}, "Review"),
+      review ? el("div", {},
+        el("div", {class: "meta", style: "margin-bottom:10px"}, `Reviewed ${review.date}, in the experiment notes: ${review.section}`),
+        el("div", {class: "meta"}, "Did the findings hold?"), el("p", {class: "prose", style: "margin-top:4px"}, review.verdict),
+        el("div", {class: "meta", style: "margin-top:12px"}, review.open ? "Action decided, still to do" : "Action"),
+        el("p", {class: "prose", style: "margin-top:4px"}, review.action),
+        ...review.acted.map((entry) => el("p", {class: "prose", style: "margin-top:4px"}, `Done ${entry.date}: ${entry.action}`)),
+        review.open ? el("div", {class: "warn", style: "margin-top:8px"}, "Not acted on yet. Record what is done with `aomma experiment-acted`.") : "")
+        : el("div", {class: "warn"}, "Not reviewed yet. Check the findings against the trials, then run `aomma experiment-reviewed`.")));
+  }
+
+  // While it runs, what the worker has been saying lately.
+  if (experiment.state === "running" && experiment.messages.length) {
+    box.append(el("div", {class: "card", style: "margin-top:16px"},
+      el("div", {class: "step"}, "Latest from the worker"),
+      ...experiment.messages.map((message) => el("p", {class: "prose", style: "margin-top:8px"}, message))));
+  }
+
+  const number = (value, digits = 2) => value === null || value === undefined ? "" : value.toFixed(digits);
+  const table = el("table", {}, el("tr", {},
+    el("th", {}, "Trial"), el("th", {}, "Kind"), el("th", {}, "Generator"), el("th", {}, "Settings"),
+    el("th", {class: "num"}, "Seconds"), el("th", {class: "num"}, "Outline fit"), el("th", {class: "num"}, "Colour error"),
+    el("th", {class: "num"}, "Hidden by wall"), el("th", {class: "num"}, "Off floor"), el("th", {class: "num"}, "Longest side"),
+    el("th", {class: "num"}, "Distance vs photo"), el("th", {class: "num"}, "Size vs estimate"), el("th", {class: "num"}, "Inside another"),
+    el("th", {}, "Error")));
+  for (const trial of experiment.trials) {
+    const settings = Object.entries(trial.settings).map(([name, value]) => `${name} = ${value}`).join(", ") || "none";
+    table.append(el("tr", {},
+      el("td", {class: "name", style: "min-width:160px"},
+        el("div", {class: "obj"}, `${trial.trial}. ${trial.object_id}`),
+        trial.reason ? el("div", {class: "desc"}, trial.reason) : ""),
+      el("td", {}, trial.kind),
+      el("td", {}, (trial.generator || "").replace(/_image_to_glb$/, "")),
+      el("td", {class: "desc"}, settings),
+      el("td", {class: "num"}, trial.generation_seconds === null || trial.generation_seconds === undefined ? "" : `${trial.generation_seconds} s`),
+      scoreCell(trial.outline_fit),
+      el("td", {class: "num"}, number(trial.colour_error)),
+      el("td", {class: "num" + (trial.hidden_by_wall > 0.02 ? " bad" : "")}, number(trial.hidden_by_wall)),
+      el("td", {class: "num"}, trial.off_floor_m === null || trial.off_floor_m === undefined ? "" : `${number(trial.off_floor_m)} m`),
+      el("td", {class: "num"}, trial.longest_side_m === null || trial.longest_side_m === undefined ? "" : `${number(trial.longest_side_m)} m`),
+      // Far enough off to matter: more than a fifth too near or too far, or more than half again or below 0.7 of the estimate.
+      el("td", {class: "num" + (Math.abs(Math.log(trial.distance_vs_photo || 1)) > 0.2 ? " bad" : "")}, number(trial.distance_vs_photo)),
+      el("td", {class: "num" + (Math.abs(Math.log(trial.size_vs_estimate || 1)) > 0.4 ? " bad" : "")}, number(trial.size_vs_estimate)),
+      el("td", {class: "num" + (trial.inside_other >= 0.05 ? " bad" : "")}, trial.inside_which ? `${number(trial.inside_other)} ${trial.inside_which}` : number(trial.inside_other)),
+      el("td", {class: "bad desc wrap"}, trial.error || ""),
+    ));
+  }
+  box.append(el("div", {class: "card", style: "margin-top:16px"},
+    el("div", {class: "step"}, "Trials"),
+    el("div", {class: "meta", style: "margin-bottom:10px"},
+      "As the harness measured them. Outline fit: overlap of the placed model's outline with the object's mask, 0 to 1, higher is better. "
+      + "Hidden by wall: share of the model a wall stands in front of. Off floor: height of its lowest surface. "
+      + "Distance vs photo: the model's distance over the depth map's (1 is right). Size vs estimate: its size over the size estimated from the photo."),
+    experiment.trials.length ? el("div", {class: "scroll"}, stackable(table)) : el("div", {class: "empty"}, "No trials yet.")));
+
+  // Each trial's close-ups (photo, the run's model, the trial's model), then any other pictures kept with the experiment.
+  const pictures = [
+    ...experiment.trials.filter((trial) => trial.picture).map((trial) => [trial.picture, `Trial ${trial.trial} · ${trial.object_id}`]),
+    ...experiment.extras.map((picture) => [picture, picture.path.split("/").pop()]),
+  ];
+  if (pictures.length) {
+    const grid = el("div", {class: "grid", style: "margin-top:16px"});
+    for (const [picture, caption] of pictures) {
+      grid.append(el("div", {class: "card"}, el("div", {class: "meta", style: "margin:0 0 8px"}, caption),
+        el("a", {href: labFileUrl(picture), target: "_blank"}, el("img", {class: "shot", src: labFileUrl(picture), alt: caption, loading: "lazy"}))));
+    }
+    box.append(grid);
+  }
+
+  box.append(el("div", {class: "card", style: "margin-top:16px"},
+    el("div", {class: "step"}, "The worker's findings"),
+    el("div", {class: "meta", style: "margin-bottom:10px"}, "What the worker model concluded, as it wrote it. Check it against the trials above."),
+    experiment.findings ? el("div", {class: "prose"}, experiment.findings)
+      : el("div", {class: "empty"}, experiment.state === "running" ? "Not finished yet." : "It stopped without reporting.")));
+}
+
+let wantedExperiment = null, shownExperiment = "";
+
+async function refreshExperiments() {
+  if (view !== "experiments") return;
+  let experiments;
+  try { experiments = await (await fetch("/experiments.json")).json(); } catch (error) { return; }
+  const picker = $("experiment-picker");
+  const names = experiments.map((experiment) => experiment.name);
+  const labels = experiments.map((experiment) => `${experiment.name} · ${experiment.state} · ${experiment.trials} trials`
+    + (experiment.state === "running" ? "" : experiment.review ? " · reviewed" : " · not reviewed"));
+  if (picker.dataset.labels !== labels.join("|")) {
+    picker.dataset.labels = labels.join("|");
+    picker.replaceChildren(...experiments.map((experiment, i) => el("option", {value: experiment.name}, labels[i])));
+  }
+  if (!experiments.length) {
+    $("experiment").replaceChildren(el("div", {class: "card empty", style: "margin-top:12px"}, "No experiments yet. Run `aomma experiment <run> \"<question>\"` to start one."));
+    return;
+  }
+  const name = names.includes(wantedExperiment) ? wantedExperiment : names[0];
+  picker.value = name;
+  let text;
+  try { text = await (await fetch(`/experiment/${encodeURIComponent(name)}`)).text(); } catch (error) { return; }
+  // Rebuild only when something changed, so pictures do not flicker.
+  if (text !== shownExperiment) { shownExperiment = text; renderExperiment(JSON.parse(text)); }
+}
+
+// Every round, running or ended, newest first: the history the Jobs tab leaves out.
+let shownRounds = "";
+
+async function refreshRounds() {
+  if (view !== "rounds") return;
+  let text;
+  try { text = await (await fetch("/rounds.json")).text(); } catch (error) { return; }
+  const all = JSON.parse(text);
+  // A running round's clock moves every second; the rest change only when their file does.
+  if (text === shownRounds && !all.some((round) => round.running)) return;
+  shownRounds = text;
+  $("view-rounds").replaceChildren(all.length ? roundsSection(Date.now() / 1000, all)
+    : el("div", {class: "card empty", style: "margin-top:12px"}, "No rounds yet. Run `aomma round lab/<plan>.toml` to start one."));
+}
+
+let view = "jobs", wantedRun = null, shownRun = "";
+
+async function refreshRuns() {
+  if (view !== "runs") return;
+  let runs;
+  try { runs = await (await fetch("/runs.json")).json(); } catch (error) { return; }
+  const picker = $("run-picker");
+  const names = runs.map((run) => run.name);
+  if (picker.dataset.names !== names.join("|")) {
+    picker.dataset.names = names.join("|");
+    picker.replaceChildren(...runs.map((run) => el("option", {value: run.name}, `${run.name} · ${run.objects} objects`)));
+  }
+  if (!runs.length) { $("run").replaceChildren(el("div", {class: "card empty", style: "margin-top:12px"}, "No runs yet. Run `aomma perceive <image>` to create one.")); return; }
+  const name = names.includes(wantedRun) ? wantedRun : names[0];
+  picker.value = name;
+
+  const text = await (await fetch(`/run/${encodeURIComponent(name)}`)).text();
+  // Rebuild only when something changed, so pictures do not flicker.
+  if (text !== shownRun) { shownRun = text; renderRun(JSON.parse(text)); }
+  refreshLog(name);
+}
+
+// The output of a run started with --detach, kept at its newest line unless the reader has scrolled up.
+async function refreshLog(name) {
+  let log;
+  try { log = await (await fetch(`/log/${encodeURIComponent(name)}`)).json(); } catch (error) { return; }
+  $("run-log").hidden = !log.lines.length;
+  if (!log.lines.length) return;
+  const lines = $("run-log-lines");
+  const atEnd = lines.scrollTop + lines.clientHeight >= lines.scrollHeight - 8;
+  const text = log.lines.join("\n");
+  $("run-log-state").textContent = log.active ? "Log · running" : "Log · not running";
+  if (lines.textContent !== text) {
+    lines.textContent = text;
+    if (atEnd) lines.scrollTop = lines.scrollHeight;
+  }
+}
+
+// The Labels tab: every labelled run of a round in a table, and one run's label
+// map on a canvas, so a mask can be judged by eye against the photo.
+const UNKNOWN_RGB = [255, 0, 255];
+// Gate 1's pictures (judgeshell.REFERENCE_CODES, AGAINST_CODES), drawn over the photo.
+const REFERENCE_KEY = {1: ["floor", [200, 150, 60]], 2: ["wall", [70, 160, 230]], 3: ["ceiling", [150, 150, 255]],
+  4: ["opening", [120, 230, 230]], 5: ["fixture", [60, 200, 90]], 6: ["appliance", [40, 170, 170]],
+  7: ["in front", [240, 120, 40]], 8: ["unsure", [255, 0, 255]]};
+const AGAINST_KEY = {1: ["agrees", [60, 200, 90]], 2: ["shell on things", [230, 40, 40]], 3: ["wrong surface", [255, 160, 0]],
+  4: ["shell left unknown", [255, 0, 255]], 5: ["item on the shell (flat things: not a fault)", [60, 120, 255]],
+  6: ["fixture not built-in", [255, 230, 0]]};
+const CLASS_ORDER = ["wall", "floor", "covering", "ceiling", "opening", "builtin", "large", "other", "small"];
+const pct = (share) => share === undefined || share === null ? "" : (100 * share).toFixed(1);
+let wantedLabels = null, wantedBatch = null, shownLabelled = "", labelsView = null;
+
+function shotName(row) {
+  if (!row.scan) return row.name;
+  const scan = row.scan.replace(/^Scan-/, "").replace(/-\d+$/, "");
+  return `${scan} ${row.shot}` + (row.seed_offset ? ` s${row.seed_offset}` : "") + (row.condition ? ` · ${row.condition}` : "");
+}
+
+function renderLabelled(all) {
+  const picker = $("labels-picker");
+  const batches = [...new Set(all.map((row) => row.batch))];
+  const labels = batches.map((batch) => `${batch} · ${all.filter((row) => row.batch === batch).length} runs`);
+  if (picker.dataset.labels !== labels.join("|")) {
+    picker.dataset.labels = labels.join("|");
+    picker.replaceChildren(...batches.map((batch, i) => el("option", {value: batch}, labels[i])));
+  }
+  if (!all.length) {
+    $("labels-table").replaceChildren(el("div", {class: "card empty", style: "margin-top:12px"}, "No label maps yet. Run `aomma labels <run>...` to make them."));
+    return;
+  }
+  const chosenRun = all.find((row) => row.name === wantedLabels);
+  const batch = batches.includes(wantedBatch) ? wantedBatch : chosenRun ? chosenRun.batch : batches[0];
+  picker.value = batch;
+  const rows = all.filter((row) => row.batch === batch).sort((a, b) => shotName(a).localeCompare(shotName(b)));
+  const within = rows.filter((row) => row.report.within_bar).length;
+  const bar = rows[0].report.unknown_bar;
+  const table = el("table", {}, el("tr", {},
+    el("th", {}, "Shot"), el("th", {}, "Gate 1"), el("th", {class: "num"}, "Unknown %"), el("th", {class: "num"}, "Overlap %"),
+    el("th", {class: "num"}, "By depth"), el("th", {class: "num"}, "By rank"),
+    ...CLASS_ORDER.map((kind) => el("th", {class: "num"}, kind)), el("th", {}, "In no list")));
+  for (const row of rows) {
+    const r = row.report;
+    table.append(el("tr", {class: "pick" + (row.name === wantedLabels ? " chosen" : "") + "", title: row.pose_off ? `Pose off (gate 0): ${row.pose_off}` : "", onclick: () => { location.hash = `#labels=${encodeURIComponent(row.name)}`; }},
+      el("td", {class: "name"}, shotName(row), row.pose_off ? el("div", {class: "desc"}, "pose off: gates not to be trusted") : ""),
+      el("td", {class: row.shell_ok === true ? "ok" : row.shell_ok === false ? "bad" : ""},
+        (row.pose_off && row.shell_ok != null ? "(pose off) " : "") + (row.shell_ok === true ? "passes" : row.shell_ok === false ? "fails" : "not judged")),
+      el("td", {class: "num " + (r.within_bar ? "ok" : "bad")}, pct(r.unknown)),
+      el("td", {class: "num"}, pct(r.overlap)), el("td", {class: "num"}, pct(r.overlap_by_depth)), el("td", {class: "num"}, pct(r.overlap_by_rank)),
+      ...CLASS_ORDER.map((kind) => el("td", {class: "num"}, pct(r.classes[kind]))),
+      el("td", {class: "name"}, (r.unnamed || []).join(", "))));
+  }
+  $("labels-table").replaceChildren(el("div", {class: "card", style: "margin-top:12px"},
+    el("div", {class: "meta"}, `${within} of ${rows.length} within the ${Math.round(100 * bar)}% unknown bar`
+      + ". Shares of the photo, in %. Pick a shot to see its map."),
+    el("div", {class: "scroll"}, stackable(table))),
+    labelsGallery(rows));
+}
+
+// Every shot of the round as pictures, so the masks can be checked by eye without opening each run: the photo, the
+// label map over it (left: tinted by class, unknown in magenta; right: overlaps in white), the shell's, the large items' and the small items' masks.
+function labelsGallery(rows) {
+  const picture = (shown, title) => shown
+    ? el("figure", {class: "gallery-pic"}, el("a", {href: fileUrl(shown), target: "_blank"},
+        el("img", {class: "shot", src: fileUrl(shown), alt: title, loading: "lazy"})), el("figcaption", {class: "desc"}, title))
+    : "";
+  const cards = rows.map((row) => {
+    const p = row.pictures || {};
+    return el("div", {class: "card"},
+      el("div", {class: "step", style: "justify-content:space-between"},
+        el("span", {}, shotName(row)),
+        el("span", {class: "desc " + (row.report.within_bar ? "ok" : "bad")}, `unknown ${pct(row.report.unknown)}%`),
+        el("a", {href: `#labels=${encodeURIComponent(row.name)}`, class: "desc"}, "inspect ›")),
+      el("div", {class: "gallery-row"},
+        picture(p.photo, "photo"), picture(p.labels, "labels · overlaps"), picture(p.shell, "shell"),
+        picture(p.large, "large items"), picture(p.small, "small items")));
+  });
+  return el("div", {class: "gallery", style: "margin-top:16px"}, ...cards);
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = src; });
+}
+
+// An image's pixels at the given size (the label map's), so the photo lines up with it whatever its own size.
+function pixelsOf(image, width = image.naturalWidth, height = image.naturalHeight) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width; canvas.height = height;
+  const context = canvas.getContext("2d", {willReadFrequently: true});
+  context.drawImage(image, 0, 0, width, height);
+  return context.getImageData(0, 0, canvas.width, canvas.height).data;
+}
+
+// Draws the run's map in the chosen mode. Values are read from the red channel of the 8-bit PNGs.
+function drawLabels() {
+  const v = labelsView;
+  if (!v) return;
+  const {width, height, photo, values, how, rgb, chosen, mode} = v;
+  const out = v.context.createImageData(width, height);
+  const o = out.data;
+  const small = mode === "reference" ? v.reference : mode === "against" ? v.against : null;
+  const key = mode === "reference" ? REFERENCE_KEY : AGAINST_KEY;
+  for (let i = 0, p = 0; i < width * height; i++, p += 4) {
+    const value = values[p], r = photo[p], g = photo[p + 1], b = photo[p + 2];
+    let colour = null, keep = 1, mix = 0;
+    if (small) {
+      const sx = Math.floor((i % width) * small.width / width), sy = Math.floor(Math.floor(i / width) * small.height / height);
+      const code = small.data[4 * (sy * small.width + sx)];
+      keep = 0.4;
+      if (key[code]) { colour = key[code][1]; mix = mode === "against" && code === 1 ? 0.25 : 0.6; keep = 1 - mix; }
+    }
+    if (mode === "labels") { colour = value ? rgb[value] : UNKNOWN_RGB; mix = value ? 0.45 : 0.7; keep = 1 - mix; }
+    else if (mode === "unknown") { if (value) keep = 0.35; else { colour = UNKNOWN_RGB; mix = 0.6; keep = 0.4; } }
+    else if (mode === "settled") {
+      const h = how ? how[p] : 0;
+      keep = 0.35;
+      if (h === v.settled.by_depth) { colour = [42, 157, 88]; mix = 0.65; }
+      else if (h === v.settled.by_rank) { colour = [235, 140, 30]; mix = 0.65; }
+      else if (h === v.settled.grown) { colour = [70, 120, 235]; mix = 0.65; }
+      else if (h === v.settled.layer) { colour = [190, 80, 220]; mix = 0.65; }
+    }
+    if (chosen !== null && value !== chosen) { keep *= 0.35; mix *= 0.35; }
+    if (chosen !== null && value === chosen && mode === "photo") { colour = rgb[value] || UNKNOWN_RGB; mix = 0.35; keep = 0.65; }
+    o[p] = r * keep + (colour ? colour[0] * mix : 0);
+    o[p + 1] = g * keep + (colour ? colour[1] * mix : 0);
+    o[p + 2] = b * keep + (colour ? colour[2] * mix : 0);
+    o[p + 3] = 255;
+  }
+  // Borders between labels, so neighbours of one class stay apart.
+  if (mode === "labels") {
+    for (let y = 1; y < height; y++) for (let x = 1; x < width; x++) {
+      const p = 4 * (y * width + x);
+      if (values[p] !== values[p - 4] || values[p] !== values[p - 4 * width]) { o[p] = o[p + 1] = o[p + 2] = 0; }
+    }
+  }
+  v.context.putImageData(out, 0, 0);
+  v.legend.replaceChildren(...legendFor(mode, v.colours));
+  for (const button of v.buttons) button.className = button.dataset.mode === mode ? "on" : "";
+  for (const row of v.rows) row.className = "pick" + (Number(row.dataset.value) === chosen ? " chosen" : "");
+}
+
+function legendFor(mode, colours) {
+  const swatch = (rgb, text) => el("span", {}, el("span", {class: "swatch", style: `background:rgb(${rgb})`}), text);
+  if (mode === "reference") return [...Object.values(REFERENCE_KEY).map(([text, rgb]) => swatch(rgb, text)),
+    el("span", {}, "untinted: no sure LiDAR, not scored")];
+  if (mode === "against") return [...Object.values(AGAINST_KEY).map(([text, rgb]) => swatch(rgb, text)),
+    el("span", {}, "untinted: not scored")];
+  if (mode === "settled") return [swatch([42, 157, 88], "overlap, settled by depth"), swatch([235, 140, 30], "overlap, settled by rank"), swatch([70, 120, 235], "unclaimed, grown into"), swatch([190, 80, 220], "a small item lying flat on it: kept by the surface, the item a layer")];
+  return [...CLASS_ORDER.filter((kind) => colours[kind]).map((kind) => swatch(colours[kind], kind)), swatch(UNKNOWN_RGB, "unknown")];
+}
+
+function smallMap(image) {
+  return image ? {width: image.naturalWidth, height: image.naturalHeight, data: pixelsOf(image)} : null;
+}
+
+function nameAt(event) {
+  const v = labelsView;
+  const box = v.canvas.getBoundingClientRect();
+  const x = Math.floor((event.clientX - box.left) * v.width / box.width), y = Math.floor((event.clientY - box.top) * v.height / box.height);
+  if (x < 0 || y < 0 || x >= v.width || y >= v.height) return null;
+  return v.values[4 * (y * v.width + x)];
+}
+
+function describeValue(value) {
+  const v = labelsView;
+  if (value === null) return "";
+  if (!value) return "unknown: no mask claims this pixel";
+  const item = v.byValue[value];
+  return `${item.id} · ${item.class} · ${pct(item.share)}% of the photo` + (item.lost ? ` · lost ${pct(item.lost)}% of its mask to others` : "");
+}
+
+async function renderLabelsRun(detail) {
+  const r = detail.report;
+  const maybe = (picture) => picture ? loadImage(fileUrl(picture)) : Promise.resolve(null);
+  const [photoImage, mapImage, howImage, referenceImage, againstImage] = await Promise.all([
+    loadImage(fileUrl(detail.photo)), loadImage(fileUrl(detail.map)), maybe(detail.how),
+    maybe(detail.shell_reference), maybe(detail.shell_against)]);
+  const width = mapImage.naturalWidth, height = mapImage.naturalHeight;
+  const canvas = el("canvas", {class: "labels", width, height});
+  const rgb = [UNKNOWN_RGB, ...detail.labels.map((item) => detail.colours[item.class])];
+  const byValue = Object.fromEntries(detail.labels.map((item) => [item.value, item]));
+  const under = el("div", {class: "under meta"}, "Point at the picture to name what is there; pick a row to pick out its mask.");
+  const modes = [["labels", "Labels"], ["unknown", "Unknown only"], ["settled", "Overlaps"],
+    ...(referenceImage ? [["reference", "Shell reference"], ["against", "Against the reference"]] : []), ["photo", "Photo"]];
+  const buttons = modes.map(([mode, title]) => el("button", {"data-mode": mode, onclick: () => { labelsView.mode = mode; drawLabels(); }}, title));
+  const items = [...detail.labels].sort((a, b) => b.share - a.share);
+  const table = el("table", {}, el("tr", {}, el("th", {}, "Label"), el("th", {}, "Class"), el("th", {class: "num"}, "Share %"),
+    el("th", {class: "num"}, "Lost %"), el("th", {class: "num"}, "Mask px")));
+  const choose = (value) => { labelsView.chosen = labelsView.chosen === value ? null : value; drawLabels(); };
+  const rows = [el("tr", {class: "pick", "data-value": "0", onclick: () => choose(0)},
+    el("td", {class: "name"}, el("span", {class: "swatch", style: `background:rgb(${UNKNOWN_RGB})`}), "unknown"), el("td", {}, ""),
+    el("td", {class: "num " + (r.within_bar ? "ok" : "bad")}, pct(r.unknown)), el("td", {class: "num"}, ""), el("td", {class: "num"}, ""))];
+  for (const item of items) {
+    rows.push(el("tr", {class: "pick", "data-value": String(item.value), onclick: () => choose(item.value)},
+      el("td", {class: "name"}, el("span", {class: "swatch", style: `background:rgb(${detail.colours[item.class]})`}), item.id),
+      el("td", {}, item.class), el("td", {class: "num"}, pct(item.share)),
+      el("td", {class: "num" + (item.lost > 0.2 ? " warn" : "")}, pct(item.lost)), el("td", {class: "num"}, String(item.mask_px))));
+  }
+  table.append(...rows);
+  const legend = el("div", {class: "legend"});
+  const gate = detail.shell && detail.shell.verdict;
+  const failed = gate ? Object.entries(gate.checks).filter(([, c]) => c.ok === false)
+    .map(([name, c]) => `${name.replaceAll("_", " ")} ${c.value.toFixed(3)} (bar ${c.bar})`) : [];
+  const gateLine = gate ? el("div", {class: gate.ok ? "ok" : "bad", style: "margin-top:6px; font-size:14px"},
+    gate.ok ? "Gate 1 (the shell): passes every bar it can judge" : `Gate 1 (the shell) fails: ${failed.join(", ")}`) : "";
+  const facts = el("div", {class: "facts"},
+    fact("unknown", `${pct(r.unknown)}%`), ...(r.grown != null ? [fact("grown into", `${pct(r.grown)}% (unknown before ${pct(r.unknown_before_growth)}%)`)] : []), fact("overlap", `${pct(r.overlap)}%`),
+    fact("settled by depth", `${pct(r.overlap_by_depth)}%`), fact("settled by rank", `${pct(r.overlap_by_rank)}%`), ...(r.layer != null ? [fact("layers", `${pct(r.layer)}%`)] : []),
+    fact("labels", String(detail.labels.length)));
+  if ((r.unnamed || []).length) facts.append(fact("in no list", r.unnamed.join(", ")));
+  $("labels-run").replaceChildren(el("div", {class: "card", style: "margin-top:16px"},
+    el("div", {class: "title"}, detail.name), el("div", {class: "meta"}, detail.run.source || ""),
+    detail.pose_off ? el("div", {class: "desc", style: "margin-top:6px; font-size:14px"}, `Pose off (gate 0): ${detail.pose_off}. The run is used like any other; its comparisons with the references, drawn by that pose, are not to be trusted.`) : "",
+    gateLine, facts,
+    el("div", {class: "modes"}, ...buttons), canvas, under, legend,
+    el("div", {class: "scroll", style: "margin-top:14px"}, stackable(table))));
+  labelsView = {canvas, context: canvas.getContext("2d"), width, height, rgb, byValue, buttons, rows, legend, colours: detail.colours,
+    reference: smallMap(referenceImage), against: smallMap(againstImage),
+    photo: pixelsOf(photoImage, width, height),
+    values: pixelsOf(mapImage), how: howImage ? pixelsOf(howImage) : null, settled: detail.settled,
+    mode: labelsView && labelsView.mode || "labels", chosen: null};
+  const show = (event) => { const value = nameAt(event); under.textContent = describeValue(value); };
+  canvas.addEventListener("mousemove", show);
+  canvas.addEventListener("click", (event) => { show(event); const value = nameAt(event); if (value !== null) choose(value); });
+  drawLabels();
+}
+
+async function refreshLabels() {
+  if (view !== "labels") return;
+  let text;
+  try { text = await (await fetch("/labelled.json")).text(); } catch (error) { return; }
+  if (text !== shownLabelled) { shownLabelled = text; renderLabelled(JSON.parse(text)); }
+  if (!wantedLabels) { $("labels-run").replaceChildren(); labelsView = null; return; }
+  if (labelsView && labelsView.name === wantedLabels) return;
+  let detail;
+  try { detail = await (await fetch(`/labels/${encodeURIComponent(wantedLabels)}`)).json(); } catch (error) { return; }
+  await renderLabelsRun(detail);
+  labelsView.name = wantedLabels;
+  $("labels-run").scrollIntoView({behavior: "smooth", block: "start"});
+}
+
+function route() {
+  const hash = location.hash;
+  view = hash.startsWith("#run") ? "runs" : hash.startsWith("#rounds") ? "rounds" : hash.startsWith("#models") ? "models" : hash.startsWith("#experiment") ? "experiments" : hash.startsWith("#labels") ? "labels" : "jobs";
+  if (hash.startsWith("#labels")) {
+    wantedLabels = hash.startsWith("#labels=") ? decodeURIComponent(hash.slice(8)) : null;
+    wantedBatch = hash.startsWith("#labels-round=") ? decodeURIComponent(hash.slice(14)) : null;
+    shownLabelled = "";
+  }
+  wantedRun = hash.startsWith("#run=") ? decodeURIComponent(hash.slice(5)) : wantedRun;
+  wantedExperiment = hash.startsWith("#experiment=") ? decodeURIComponent(hash.slice(12)) : wantedExperiment;
+  $("view-jobs").hidden = view !== "jobs";
+  $("view-runs").hidden = view !== "runs";
+  $("view-rounds").hidden = view !== "rounds";
+  $("view-models").hidden = view !== "models";
+  $("view-experiments").hidden = view !== "experiments";
+  $("view-labels").hidden = view !== "labels";
+  $("tab-jobs").className = view === "jobs" ? "on" : "";
+  $("tab-runs").className = view === "runs" ? "on" : "";
+  $("tab-rounds").className = view === "rounds" ? "on" : "";
+  $("tab-models").className = view === "models" ? "on" : "";
+  $("tab-experiments").className = view === "experiments" ? "on" : "";
+  $("tab-labels").className = view === "labels" ? "on" : "";
+  refreshJobs();
+  refreshRuns();
+  refreshRounds();
+  refreshModels();
+  refreshExperiments();
+  refreshLabels();
+}
+
+$("run-picker").addEventListener("change", (event) => { location.hash = `#run=${encodeURIComponent(event.target.value)}`; });
+$("labels-picker").addEventListener("change", (event) => { location.hash = `#labels-round=${encodeURIComponent(event.target.value)}`; });
+$("experiment-picker").addEventListener("change", (event) => { location.hash = `#experiment=${encodeURIComponent(event.target.value)}`; });
+window.addEventListener("hashchange", route);
+route();
+setInterval(refreshJobs, 1000);
+setInterval(refreshRuns, 4000);
+setInterval(refreshRounds, 4000);
+setInterval(refreshExperiments, 4000);
+setInterval(refreshLabels, 4000);
+</script>
+</body>
+</html>

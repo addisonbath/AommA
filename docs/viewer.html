@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AommA scene</title>
+<style>
+  :root { --bg: #e9e9e4; --text: #1c1c1a; --card: #ffffff; --line: #e3e3de; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #2c2d29; --text: #ecece8; --card: #1f201d; --line: #32332f; } }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
+               font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  [hidden] { display: none !important; }
+  #note { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; }
+  #bar { position: absolute; left: 10px; top: 10px; display: flex; gap: 6px; }
+  button { font: inherit; padding: 6px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+</style>
+<script type="importmap">
+{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+             "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="note">Preparing the 3D scene…</div>
+<div id="bar" hidden><button id="photo-view">Photo view</button></div>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
+
+const note = document.getElementById("note");
+const source = new URLSearchParams(location.search).get("scene");
+
+const renderer = new THREE.WebGLRenderer({antialias: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+document.body.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--bg").trim());
+const white = new THREE.Scene();
+white.background = new THREE.Color(0xffffff);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(white).texture;
+
+const camera = new THREE.PerspectiveCamera(50, 1, 0.02, 100);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.addEventListener("change", draw);
+
+let photo = null;
+
+function draw() { renderer.render(scene, camera); }
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  camera.aspect = innerWidth / innerHeight;
+  if (photo) {
+    const across = Math.atan(Math.tan(photo.fovY / 2) * photo.aspect);
+    camera.fov = 2 * Math.max(photo.fovY / 2, Math.atan(Math.tan(across) / camera.aspect)) * 180 / Math.PI;
+  }
+  camera.updateProjectionMatrix();
+  draw();
+}
+
+function photoView() {
+  camera.position.copy(photo.position);
+  controls.target.copy(photo.target);
+  controls.update();
+  resize();
+}
+
+const loader = new GLTFLoader();
+loader.setDRACOLoader(new DRACOLoader().setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/"));
+loader.load(source, (gltf) => {
+  scene.add(gltf.scene);
+  scene.updateMatrixWorld(true);
+
+  const bounds = new THREE.Box3();
+  gltf.scene.traverse((node) => {
+    if (node.isMesh && new THREE.Box3().setFromObject(node).getSize(new THREE.Vector3()).length() < 8) bounds.expandByObject(node);
+  });
+  const centre = bounds.getCenter(new THREE.Vector3());
+
+  const shot = gltf.cameras[0];
+  if (shot) {
+    const position = shot.getWorldPosition(new THREE.Vector3());
+    const forward = shot.getWorldDirection(new THREE.Vector3());
+    const reach = Math.max(centre.clone().sub(position).dot(forward), 0.5);
+    photo = {position, target: position.clone().addScaledVector(forward, reach),
+             fovY: shot.fov * Math.PI / 180, aspect: shot.aspect};
+  } else {
+    const size = bounds.getSize(new THREE.Vector3()).length();
+    photo = {position: centre.clone().add(new THREE.Vector3(0, size * 0.3, size)), target: centre, fovY: 0.87, aspect: 1};
+  }
+  note.remove();
+  document.getElementById("bar").hidden = false;
+  photoView();
+}, (progress) => {
+  if (progress.total) note.textContent = `Loading the 3D scene… ${Math.round(100 * progress.loaded / progress.total)}%`;
+}, () => { note.textContent = "The 3D scene could not be loaded."; });
+
+document.getElementById("photo-view").addEventListener("click", photoView);
+addEventListener("resize", resize);
+resize();
+</script>
+</body>
+</html>

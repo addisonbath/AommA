@@ -1,0 +1,37 @@
+[project]
+name = "aomma"
+version = "0.1.0"
+description = "Agent harness that turns a single image into a 3D USD scene"
+readme = "README.md"
+authors = [
+    { name = "addisonbath", email = "addisonbath@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=2.8.0",
+    "httpx>=0.28.1",
+    "numpy>=2.5.4",
+    "opencv-python-headless>=5.1.0.95",
+    "pillow>=13.0.0",
+    "pydantic>=2.14.3",
+    "pyyaml>=6.0.3",
+    "scipy>=1.18.1",
+    "usd-core>=26.11",
+    "websockets>=17.4",
+]
+
+[project.scripts]
+aomma = "aomma.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.11,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+# Rounds check out their commit under cache/code/ (rounds.py); its tests are not this tree's.
+testpaths = ["tests"]

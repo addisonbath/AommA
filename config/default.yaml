@@ -1,0 +1,63 @@
+# Servers default to this machine. Put another machine's addresses in config/local.yaml (not in git), which is
+# laid over this file key by key.
+
+# Which entry under `vlms` the pipeline uses. Override with `--vlm <name>`.
+vlm: local
+
+vlms:
+  local:
+    backend: ollama
+    url: http://localhost:11434
+    model: qwen3.8:27b
+  opus:
+    backend: anthropic
+    model: claude-opus-5-5
+    effort: low
+
+# ComfyUI servers. Each runs one job at a time, so the number of servers in a
+# lane is how many of its jobs run at once.
+comfy:
+  # Quick jobs (masks, depth, image edits), kept off the slow lane's queue.
+  light: [http://localhost:8189]
+  # Image-to-3D generation: minutes per job, memory- and GPU-hungry.
+  heavy: [http://localhost:8188]
+
+# A heavy job is not submitted while its server reports less free memory than this.
+min_free_memory_gb: 30
+
+# ComfyUI workflow that turns an object crop into a GLB model. It must have a
+# LoadImage node named "input_image" and a 3D save node named "output_model";
+# an optional PrimitiveFloat node named "input_fov" receives the crop's field of view,
+# and an optional PrimitiveString node named "input_background" names the colour the
+# crop's background should be (black without it).
+image_to_3d_workflow: workflows/pixal3d_image_to_glb.json
+
+# An experiment may generate with any image-to-3D workflow in the same folder.
+# What is known about each, by file name, is told to the model that runs it.
+workflow_notes:
+  pixal3d_image_to_glb: best textures; 2 to 15 minutes per object at upsample resolution 1024, slowest on bulky ones
+  trellis2_image_to_glb: faster, but has given much worse textures
+  hunyuan3d_image_to_glb: Hunyuan3D 2.1; makes the shape only, so the model is plain grey with no texture
+
+# ComfyUI workflow that redraws a partly hidden object complete and alone, with
+# nodes "input_image", "input_prompt", "output_image" and "output_mask".
+repair_workflow: workflows/flux2_klein_isolate.json
+
+# ComfyUI workflow that redraws a top-down crop of a floor as an even, empty
+# texture of it, with nodes "input_image", "input_prompt" and "output_image".
+floor_texture_workflow: workflows/flux2_klein_texture.json
+
+# Per-run cap on input + output tokens sent to billed (cloud) backends.
+max_billed_tokens: 50000
+
+# The review that follows a run compares the render with the photo, object by
+# object, and fixes what it can. It looks the scene over at most this many times,
+# and may generate at most this many models in all (each takes many minutes).
+review_rounds: 2
+review_generations: 6
+# A staged run's large items are reviewed alone, before anything is placed on them,
+# with a budget of their own.
+large_review_generations: 4
+
+# Longest side, in pixels, of the working copy of the image sent to models.
+image_max_side: 1024

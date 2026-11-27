@@ -1,0 +1,195 @@
+{
+  "unet": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "flux1-fill-dev.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "clip": {
+    "class_type": "DualCLIPLoader",
+    "inputs": {
+      "clip_name1": "clip_l.safetensors",
+      "clip_name2": "t5xxl_fp16.safetensors",
+      "type": "flux"
+    }
+  },
+  "vae": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    }
+  },
+  "input_image": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    }
+  },
+  "input_mask": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    }
+  },
+  "hidden": {
+    "class_type": "ImageToMask",
+    "inputs": {
+      "image": [
+        "input_mask",
+        0
+      ],
+      "channel": "red"
+    }
+  },
+  "input_prompt": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "clip",
+        0
+      ],
+      "text": ""
+    }
+  },
+  "guided": {
+    "class_type": "FluxGuidance",
+    "inputs": {
+      "conditioning": [
+        "input_prompt",
+        0
+      ],
+      "guidance": 30.0
+    }
+  },
+  "negative": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": [
+        "input_prompt",
+        0
+      ]
+    }
+  },
+  "fill": {
+    "class_type": "InpaintModelConditioning",
+    "inputs": {
+      "positive": [
+        "guided",
+        0
+      ],
+      "negative": [
+        "negative",
+        0
+      ],
+      "vae": [
+        "vae",
+        0
+      ],
+      "pixels": [
+        "input_image",
+        0
+      ],
+      "mask": [
+        "hidden",
+        0
+      ],
+      "noise_mask": true
+    }
+  },
+  "model": {
+    "class_type": "DifferentialDiffusion",
+    "inputs": {
+      "model": [
+        "unet",
+        0
+      ]
+    }
+  },
+  "sampler": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "model",
+        0
+      ],
+      "seed": 1,
+      "steps": 24,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "positive": [
+        "fill",
+        0
+      ],
+      "negative": [
+        "fill",
+        1
+      ],
+      "latent_image": [
+        "fill",
+        2
+      ],
+      "denoise": 1.0
+    }
+  },
+  "filled": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "sampler",
+        0
+      ],
+      "vae": [
+        "vae",
+        0
+      ]
+    }
+  },
+  "output_image": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "filled",
+        0
+      ]
+    }
+  },
+  "matting": {
+    "class_type": "LoadBackgroundRemovalModel",
+    "inputs": {
+      "bg_removal_name": "birefnet.safetensors"
+    }
+  },
+  "subject": {
+    "class_type": "RemoveBackground",
+    "inputs": {
+      "bg_removal_model": [
+        "matting",
+        0
+      ],
+      "image": [
+        "filled",
+        0
+      ]
+    }
+  },
+  "subject_image": {
+    "class_type": "MaskToImage",
+    "inputs": {
+      "mask": [
+        "subject",
+        0
+      ]
+    }
+  },
+  "output_mask": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "subject_image",
+        0
+      ]
+    }
+  }
+}

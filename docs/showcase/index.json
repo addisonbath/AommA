@@ -1,0 +1,37 @@
+[
+  {
+    "slug": "kitchen",
+    "title": "Kitchen",
+    "date": "2026-11-18",
+    "commit": "d3922af-dirty",
+    "run": "20261118-102902-kitchen"
+  },
+  {
+    "slug": "office",
+    "title": "Office",
+    "date": "2026-11-18",
+    "commit": "d3922af-dirty",
+    "run": "20261118-102902-office"
+  },
+  {
+    "slug": "garage",
+    "title": "Garage",
+    "date": "2026-11-18",
+    "commit": "d3922af-dirty",
+    "run": "20261118-102902-Garage"
+  },
+  {
+    "slug": "bookshelf",
+    "title": "Bookshelf",
+    "date": "2026-11-18",
+    "commit": "d3922af-dirty",
+    "run": "20261118-102902-bookshelf"
+  },
+  {
+    "slug": "bedroom",
+    "title": "Bedroom",
+    "date": "2026-11-18",
+    "commit": "d3922af-dirty",
+    "run": "20261118-102902-bedroom"
+  }
+]
